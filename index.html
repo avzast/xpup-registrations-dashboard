@@ -8,11 +8,13 @@
   :root {
     --bg: #f5f6f8; --card: #ffffff; --text: #1c2230; --muted: #667085; --line: #e3e6ec;
     --ok: #12805c; --bad: #b42318; --bad-bg: #fdebe9; --accent: #2f5bea;
+    --warn-bg: #fff6e0; --warn-line: #f0d08a; --warn-text: #6b4a00;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #12151c; --card: #1b2029; --text: #eef1f6; --muted: #98a2b3; --line: #2b3240;
       --ok: #4cc79a; --bad: #ff8a80; --bad-bg: #3a1b19; --accent: #7e9bff;
+      --warn-bg: #3a2f10; --warn-line: #6b5518; --warn-text: #f3d58a;
     }
   }
   * { box-sizing: border-box; }
@@ -45,6 +47,9 @@
   .track { width: 48px; height: 8px; background: var(--bad-bg); border-radius: 4px; overflow: hidden; flex: none; }
   .fill { height: 100%; background: var(--ok); }
   .msg { color: var(--bad); font-size: 14px; margin: 0 0 12px; display: none; }
+  .warn { display: none; background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-text);
+          border-radius: 10px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px; }
+  .warn ul { margin: 0; padding-left: 18px; }
   @media (max-width: 760px) {
     .tables { grid-template-columns: 1fr; }
     .kpi .num { font-size: 40px; }
@@ -73,6 +78,7 @@
     </div>
   </header>
   <p class="msg" id="msg"></p>
+  <div class="warn" id="warn"></div>
 
   <div class="kpis">
     <div class="kpi"><div class="label">Всего</div><div class="num" id="k-total">0</div><div class="sub">регистраций</div></div>
@@ -128,9 +134,37 @@ city,registered,source,ticket,paid
 
 <script>
 (function () {
-  var PAID = ["да", "yes", "true", "1", "оплачено", "paid"];
+  var PAID_YES = ["да", "yes", "true", "1", "оплачено", "paid", "y"];
+  var PAID_NO = ["нет", "no", "false", "0", "не оплачено", "неоплачено", "unpaid", "n"];
+  var ID_COLS = ["name", "имя", "фио", "email", "e-mail", "почта", "phone", "телефон", "id"];
 
-  function parseCSV(text) {
+  function clean(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
+  function keyOf(s) { return clean(s).toLowerCase().replace(/ё/g, "е"); }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function pct(a, b) { return b ? Math.round(a * 100 / b) : 0; }
+
+  // Кодировка: сначала строгий UTF-8, если не вышло - Windows-1251 (так сохраняет русский Excel).
+  function decode(buf) {
+    try { return { text: new TextDecoder("utf-8", { fatal: true }).decode(buf), enc: "UTF-8" }; }
+    catch (e) { return { text: new TextDecoder("windows-1251").decode(buf), enc: "Windows-1251" }; }
+  }
+
+  // Разделитель: берём тот, которого больше в строке заголовка (запятая, точка с запятой, табуляция).
+  function detectDelimiter(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim() !== ""; });
+    var first = lines[0] || "", best = ",", n = -1;
+    [",", ";", "\t"].forEach(function (d) {
+      var c = first.split(d).length - 1;
+      if (c > n) { n = c; best = d; }
+    });
+    return best;
+  }
+
+  function parseCSV(text, delim) {
     text = text.replace(/^﻿/, "");
     var rows = [], row = [], cur = "", q = false, i, c;
     function pushRow() {
@@ -144,7 +178,7 @@ city,registered,source,ticket,paid
         if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
         else cur += c;
       } else if (c === '"') q = true;
-      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === delim) { row.push(cur); cur = ""; }
       else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; pushRow(); }
       else cur += c;
     }
@@ -153,36 +187,61 @@ city,registered,source,ticket,paid
   }
 
   function toRecords(text) {
-    var rows = parseCSV(text);
+    var delim = detectDelimiter(text.replace(/^﻿/, ""));
+    var rows = parseCSV(text, delim);
     if (rows.length < 2) throw new Error("в файле нет строк с данными.");
-    var head = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+    var head = rows[0].map(function (h) { return keyOf(h); });
     var iCity = head.indexOf("city"), iSrc = head.indexOf("source"), iPaid = head.indexOf("paid");
     if (iCity < 0 || iSrc < 0 || iPaid < 0)
       throw new Error("нужны колонки city, source и paid. Найдены: " + head.join(", "));
-    return rows.slice(1).map(function (r) {
-      return {
-        city: (r[iCity] || "").trim() || "Не указан",
-        source: (r[iSrc] || "").trim() || "Не указан",
-        paid: PAID.indexOf((r[iPaid] || "").trim().toLowerCase()) >= 0
-      };
+
+    var unknown = {}, unknownCount = 0, seen = {}, dups = 0;
+    var hasId = head.some(function (h) { return ID_COLS.indexOf(h) >= 0; });
+
+    var recs = rows.slice(1).map(function (r) {
+      var raw = clean(r[iPaid]), k = keyOf(raw), status;
+      if (PAID_YES.indexOf(k) >= 0) status = "yes";
+      else if (PAID_NO.indexOf(k) >= 0) status = "no";
+      else {
+        status = "unknown"; unknownCount++;
+        var label = raw === "" ? "пусто" : raw;
+        unknown[label] = (unknown[label] || 0) + 1;
+      }
+      if (hasId) {
+        var sig = r.map(keyOf).join("\u0001");
+        if (seen[sig]) dups++; else seen[sig] = 1;
+      }
+      return { city: clean(r[iCity]) || "Не указан", source: clean(r[iSrc]) || "Не указан", status: status };
     });
+
+    var notes = [];
+    if (unknownCount) {
+      notes.push("Статус оплаты не распознан у " + unknownCount + " строк (" +
+        Object.keys(unknown).map(function (k) { return esc(k) + " ×" + unknown[k]; }).join(", ") +
+        "). Они посчитаны как «не оплатили».");
+    }
+    if (dups) notes.push("Найдено полностью одинаковых строк: " + dups + ". Возможно, это дубли, они посчитаны как отдельные регистрации.");
+    if (text.indexOf("�") >= 0) notes.push("В файле есть нечитаемые символы: проверьте кодировку файла.");
+    return { recs: recs, notes: notes, delim: delim };
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
-    });
-  }
-  function pct(a, b) { return b ? Math.round(a * 100 / b) : 0; }
-
-  function group(recs, key) {
-    var m = {};
+  // Объединяет написания, которые различаются регистром, пробелами и е/ё.
+  function group(recs, field, noteLabel, notes) {
+    var m = {}, order = [];
     recs.forEach(function (r) {
-      var g = m[r[key]] || (m[r[key]] = { name: r[key], total: 0, paid: 0 });
-      g.total++; if (r.paid) g.paid++;
+      var raw = r[field], k = keyOf(raw), g = m[k];
+      if (!g) { g = m[k] = { total: 0, paid: 0, forms: {} }; order.push(k); }
+      g.total++; if (r.status === "yes") g.paid++;
+      g.forms[raw] = (g.forms[raw] || 0) + 1;
     });
-    return Object.keys(m).map(function (k) { return m[k]; })
-      .sort(function (a, b) { return b.total - a.total || a.name.localeCompare(b.name, "ru"); });
+    var out = order.map(function (k) {
+      var g = m[k], forms = Object.keys(g.forms), best = forms[0];
+      forms.forEach(function (f) { if (g.forms[f] > g.forms[best]) best = f; });
+      if (forms.length > 1)
+        notes.push(noteLabel + ": объединены написания " + forms.map(function (f) { return "«" + esc(f) + "»"; }).join(", ") + ".");
+      return { name: best, total: g.total, paid: g.paid };
+    });
+    return out.sort(function (a, b) { return b.total - a.total || a.name.localeCompare(b.name, "ru"); });
   }
 
   function line(name, t, p, bar) {
@@ -200,21 +259,46 @@ city,registered,source,ticket,paid
     document.getElementById(id).innerHTML = h;
   }
 
-  function render(recs, label) {
-    var total = recs.length, paid = recs.filter(function (r) { return r.paid; }).length;
-    document.getElementById("k-total").textContent = total;
-    document.getElementById("k-paid").textContent = paid;
-    document.getElementById("k-unpaid").textContent = total - paid;
-    document.getElementById("k-paid-pct").textContent = pct(paid, total) + "% от всех";
-    document.getElementById("k-unpaid-pct").textContent = pct(total - paid, total) + "% от всех";
-    document.getElementById("src").textContent = label + " · " + total + " строк";
-    renderTable("t-source", "Канал", group(recs, "source"), total, paid);
-    renderTable("t-city", "Город", group(recs, "city"), total, paid);
+  function setText(id, t) { document.getElementById(id).textContent = t; }
+
+  function showWarn(notes) {
+    var w = document.getElementById("warn");
+    w.innerHTML = notes.length ? "<ul>" + notes.map(function (n) { return "<li>" + n + "</li>"; }).join("") + "</ul>" : "";
+    w.style.display = notes.length ? "block" : "none";
   }
 
   function showError(t) {
     var m = document.getElementById("msg");
     m.textContent = t; m.style.display = t ? "block" : "none";
+  }
+
+  // При ошибке загрузки убираем старые цифры, чтобы их нельзя было принять за данные нового файла.
+  function clearView() {
+    ["k-total", "k-paid", "k-unpaid"].forEach(function (id) { setText(id, "—"); });
+    setText("k-paid-pct", ""); setText("k-unpaid-pct", "");
+    setText("src", "Файл не загружен");
+    document.getElementById("t-source").innerHTML = "";
+    document.getElementById("t-city").innerHTML = "";
+    showWarn([]);
+  }
+
+  function render(parsed, label) {
+    var recs = parsed.recs, notes = parsed.notes.slice();
+    var total = recs.length, paid = recs.filter(function (r) { return r.status === "yes"; }).length;
+    var bySource = group(recs, "source", "Каналы", notes);
+    var byCity = group(recs, "city", "Города", notes);
+    setText("k-total", total);
+    setText("k-paid", paid);
+    setText("k-unpaid", total - paid);
+    setText("k-paid-pct", pct(paid, total) + "% от всех");
+    setText("k-unpaid-pct", pct(total - paid, total) + "% от всех");
+    var n10 = total % 10, n100 = total % 100;
+    var word = n10 === 1 && n100 !== 11 ? "строка" : (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14) ? "строки" : "строк");
+    setText("src", label + " · " + total + " " + word);
+    renderTable("t-source", "Канал", bySource, total, paid);
+    renderTable("t-city", "Город", byCity, total, paid);
+    showWarn(notes);
+    showError("");
   }
 
   render(toRecords(document.getElementById("data").textContent), "Данные: registrations.csv");
@@ -225,10 +309,17 @@ city,registered,source,ticket,paid
     var f = file.files[0]; if (!f) return;
     var rd = new FileReader();
     rd.onload = function () {
-      try { render(toRecords(rd.result), "Данные: " + f.name); showError(""); }
-      catch (e) { showError("Не удалось прочитать файл: " + e.message); }
+      try {
+        var d = decode(rd.result), parsed = toRecords(d.text), extra = [];
+        if (d.enc !== "UTF-8") extra.push("кодировка " + d.enc);
+        if (parsed.delim !== ",") extra.push("разделитель «" + (parsed.delim === "\t" ? "табуляция" : parsed.delim) + "»");
+        render(parsed, "Данные: " + f.name + (extra.length ? " (" + extra.join(", ") + ")" : ""));
+      } catch (e) {
+        clearView();
+        showError("Не удалось прочитать файл: " + e.message);
+      }
     };
-    rd.readAsText(f, "utf-8");
+    rd.readAsArrayBuffer(f);
     file.value = "";
   };
 })();
