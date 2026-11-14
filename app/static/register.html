@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Регистрация на XP&amp;UP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="/static/app.css">
+<style>
+  .reg { max-width: 520px; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-left, 0px)) 48px; }
+  .reg .card { display: grid; gap: 14px; padding: 24px; }
+  .reg label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .reg input, .reg select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 400; width: 100%; min-width: 0; }
+  .reg .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .reg .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .reg .ok { padding: 16px; border-radius: 8px; background: var(--accent-soft); }
+  .reg .ok b { display: block; font-family: var(--font-display); font-size: 18px; margin-bottom: 4px; }
+  .reg [hidden] { display: none; }
+  .reg .note { color: var(--muted); font-size: 12px; margin: 0; }
+  @media (max-width: 480px) { .reg .row2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="reg">
+  <p class="eyebrow">XP&amp;UP</p>
+  <h1>Регистрация участника</h1>
+  <p class="sub">Заполните форму. После проверки заявки мы подтвердим участие письмом.</p>
+  <form class="card" id="reg-form" style="margin-top:20px">
+    <label for="r-name">Имя и фамилия<input id="r-name" name="name" required maxlength="120" autocomplete="name"></label>
+    <label for="r-email">Email<input id="r-email" name="email" type="email" required maxlength="160" autocomplete="email"></label>
+    <div class="row2">
+      <label for="r-city">Город<input id="r-city" name="city" maxlength="80" autocomplete="address-level2"></label>
+      <label for="r-age">Возраст<input id="r-age" name="age" type="number" min="10" max="99" inputmode="numeric"></label>
+    </div>
+    <label for="r-track">Направление
+      <select id="r-track" name="track">
+        <option value="">Выберите направление</option>
+        <option>Разработка</option><option>Дизайн</option><option>Маркетинг</option><option>Бизнес</option>
+      </select>
+    </label>
+    <div class="trap" aria-hidden="true"><label>Не заполняйте это поле<input id="r-website" name="website" tabindex="-1" autocomplete="off"></label></div>
+    <p class="err" id="r-err" role="alert"></p>
+    <button class="btn primary" type="submit" id="r-submit">Зарегистрироваться</button>
+    <p class="note">Мы храним имя, email, город и возраст только для организации мероприятия.</p>
+  </form>
+  <div class="ok" id="r-ok" hidden role="status"><b>Заявка отправлена</b>Спасибо! Мы напишем на указанный email, когда подтвердим участие.</div>
+</main>
+<script src="/static/register.js"></script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>Регистрации XP&amp;UP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main class="login-wrap" id="login" hidden>
+  <form class="card login" id="login-form">
+    <p class="eyebrow">XP&amp;UP</p>
+    <h1>Вход в дашборд</h1>
+    <p class="sub">Данные участников видны только администраторам.</p>
+    <label for="l-pass">Пароль
+      <input id="l-pass" type="password" autocomplete="current-password" required>
+    </label>
+    <p class="err" id="l-err" role="alert"></p>
+    <button class="btn primary" type="submit">Войти</button>
+  </form>
+</main>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">XP&amp;UP</p>
+      <h1>Регистрации участников</h1>
+      <p class="sub" id="sub">Загружаем данные…</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-add" type="button">+ Добавить участника</button>
+      <button class="btn" id="btn-import" type="button">Импорт CSV</button>
+      <button class="btn" id="btn-export" type="button">Экспорт CSV</button>
+      <button class="btn" id="btn-logout" type="button" hidden>Выйти</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+  <div class="empty" id="empty" hidden></div>
+
+  <div id="dash" hidden>
+    <section class="filters" aria-label="Фильтры">
+      <div class="seg" role="group" aria-label="Период" id="seg-period">
+        <button type="button" data-p="7" aria-pressed="false">7 дней</button>
+        <button type="button" data-p="30" aria-pressed="true">30 дней</button>
+        <button type="button" data-p="all" aria-pressed="false">Всё время</button>
+      </div>
+      <select class="field" id="f-status" aria-label="Статус">
+        <option value="">Все статусы</option>
+        <option value="confirmed">Подтверждён</option>
+        <option value="pending">Ожидает</option>
+        <option value="cancelled">Отменён</option>
+      </select>
+      <select class="field" id="f-source" aria-label="Источник"><option value="">Все источники</option></select>
+      <select class="field" id="f-track" aria-label="Направление"><option value="">Все направления</option></select>
+      <input class="field search" id="f-q" type="search" placeholder="Поиск: имя, email, город" aria-label="Поиск">
+      <button class="btn small" id="f-reset" type="button">Сбросить</button>
+    </section>
+
+    <section class="kpis" id="kpis" aria-label="Ключевые показатели"></section>
+
+    <section class="grid">
+      <div class="card c8">
+        <div class="card-head">
+          <div><h2>Динамика регистраций</h2><p class="hint" id="daily-hint"></p></div>
+          <div class="seg" role="group" aria-label="Вид графика" id="seg-mode">
+            <button type="button" data-m="daily" aria-pressed="true">По дням</button>
+            <button type="button" data-m="cum" aria-pressed="false">Накопительно</button>
+          </div>
+        </div>
+        <div class="chart" id="chart-daily"></div>
+      </div>
+      <div class="card c4">
+        <h2>Что видно из данных</h2>
+        <p class="hint">Считается по текущим фильтрам</p>
+        <ul class="insights" id="insights"></ul>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card c4"><h2>Источники</h2><p class="hint">Откуда пришли, и сколько из них подтвердили участие</p><div class="hbars" id="by-source"></div></div>
+      <div class="card c4"><h2>Направления</h2><p class="hint">Выбранный трек</p><div class="hbars" id="by-track"></div></div>
+      <div class="card c4"><h2>Города</h2><p class="hint">Шесть крупнейших, остальные в «Другие»</p><div class="hbars" id="by-city"></div></div>
+    </section>
+
+    <section class="grid">
+      <div class="card c6"><h2>Статусы</h2><p class="hint">Доля подтверждений и отмен</p><div id="by-status"></div></div>
+      <div class="card c6"><h2>Возраст</h2><p class="hint" id="age-hint">Участники по возрастным группам</p><div class="hist" id="by-age"></div></div>
+    </section>
+
+    <section class="card table-card" aria-label="Участники">
+      <div class="table-head">
+        <div><h2 style="margin:0;font-family:var(--font-display);font-size:16px">Участники</h2></div>
+        <span class="count" id="table-count"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr id="thead"></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager"></div>
+    </section>
+  </div>
+</div>
+
+<div class="drawer-back" id="drawer-back" hidden>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div class="drawer-top">
+      <h2 id="drawer-title">Новый участник</h2>
+      <button class="btn small" id="drawer-close" type="button">Закрыть</button>
+    </div>
+    <div class="seg" role="group" aria-label="Способ добавления" id="seg-add">
+      <button type="button" data-t="manual" aria-pressed="true">Вручную</button>
+      <button type="button" data-t="csv" aria-pressed="false">Из CSV</button>
+    </div>
+    <form class="f" id="form-add" autocomplete="off">
+      <label for="a-name">Имя и фамилия<input id="a-name" required maxlength="120"></label>
+      <label for="a-email">Email<input id="a-email" type="email" required maxlength="160"></label>
+      <div class="row2">
+        <label for="a-city">Город<input id="a-city" list="dl-city" maxlength="80"></label>
+        <label for="a-age">Возраст<input id="a-age" type="number" min="10" max="99"></label>
+      </div>
+      <div class="row2">
+        <label for="a-track">Направление<input id="a-track" list="dl-track" maxlength="60"></label>
+        <label for="a-source">Источник<input id="a-source" list="dl-source" maxlength="60"></label>
+      </div>
+      <div class="row2">
+        <label for="a-status">Статус
+          <select id="a-status"><option value="pending">Ожидает</option><option value="confirmed">Подтверждён</option><option value="cancelled">Отменён</option></select>
+        </label>
+        <label for="a-date">Дата регистрации<input id="a-date" type="date"></label>
+      </div>
+      <datalist id="dl-city"></datalist><datalist id="dl-track"></datalist><datalist id="dl-source"></datalist>
+      <p class="err" id="a-err" role="alert"></p>
+      <button class="btn primary" type="submit" id="a-submit">Сохранить участника</button>
+    </form>
+    <div id="csv-pane" hidden>
+      <div class="drop">
+        <span>Выберите CSV-файл с регистрациями. Столбцы находятся по заголовкам:</span>
+        <code>имя, email, город, возраст, направление, источник, статус, дата</code>
+        <span>Разделитель запятая, точка с запятой или табуляция. Участники с уже существующим email пропускаются.</span>
+        <input type="file" id="csv-file" accept=".csv,.tsv,.txt,text/csv">
+      </div>
+      <p id="csv-summary" style="margin:12px 0 0;color:var(--ink-2)"></p>
+      <button class="btn primary" id="csv-go" type="button" style="margin-top:12px" disabled>Импортировать</button>
+    </div>
+  </aside>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

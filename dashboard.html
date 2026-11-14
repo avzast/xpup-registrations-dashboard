@@ -1,0 +1,936 @@
+<title>Регистрации XP&amp;UP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap">
+<style>
+/* Layout: sticky filter bar, 12-column card grid (chart + insights, three breakdowns, status + age), participant table below. */
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --ink: #131820;
+  --ink-2: #4a5362;
+  --muted: #768093;
+  --line: #e0e5ed;
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --accent-soft: #e5effb;
+  --hover: #eef2f8;
+  --good: #008300;
+  --warn: #c98500;
+  --bad: #d23b3a;
+  --bar: #2a78d6;
+  --bar-dim: #a9c8f1;
+  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1218; --surface: #161b23; --ink: #eceff4; --ink-2: #b7c0cd; --muted: #8993a3;
+    --line: #262d38; --accent: #3987e5; --accent-ink: #0b0f15; --accent-soft: #1a2a40; --hover: #1e2530;
+    --good: #0ca30c; --warn: #e0a020; --bad: #e66767; --bar: #3987e5; --bar-dim: #2a4a76;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1218; --surface: #161b23; --ink: #eceff4; --ink-2: #b7c0cd; --muted: #8993a3;
+  --line: #262d38; --accent: #3987e5; --accent-ink: #0b0f15; --accent-soft: #1a2a40; --hover: #1e2530;
+  --good: #0ca30c; --warn: #e0a020; --bad: #e66767; --bar: #3987e5; --bar-dim: #2a4a76;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 24px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+.eyebrow { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.15; text-wrap: balance; }
+.sub { margin: 6px 0 0; color: var(--ink-2); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 500; }
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--accent); }
+.btn.danger { color: var(--bad); }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.banner { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 10px 14px; margin-bottom: 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); }
+.banner[hidden] { display: none; }
+
+.filters { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 7px 12px; cursor: pointer; color: var(--ink-2); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.field { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-width: 0; }
+.filters .search { flex: 1 1 180px; min-width: 140px; }
+.filters .spacer { flex: 1 1 0; }
+.count { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.card h2 { margin: 0 0 2px; font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.card .hint { margin: 0 0 14px; color: var(--muted); font-size: 12px; }
+.kpi .label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kpi .value { font-family: var(--font-display); font-weight: 800; font-size: 32px; line-height: 1.2; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.kpi .value small { font-size: 16px; font-weight: 600; color: var(--muted); }
+.kpi .note { margin-top: 4px; font-size: 13px; color: var(--ink-2); min-height: 20px; }
+.delta { font-weight: 600; font-variant-numeric: tabular-nums; }
+.delta.up { color: var(--good); } .delta.down { color: var(--bad); } .delta.flat { color: var(--muted); }
+.meter { height: 8px; border-radius: 4px; background: var(--hover); margin-top: 8px; overflow: hidden; display: flex; gap: 2px; }
+.meter i { display: block; height: 100%; }
+.cap-edit { display: inline-flex; gap: 6px; align-items: center; }
+.cap-edit input { width: 80px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.c8 { grid-column: span 8; } .c6 { grid-column: span 6; } .c4 { grid-column: span 4; }
+@media (max-width: 960px) { .c8, .c6, .c4 { grid-column: span 12; } }
+.card-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font-body); font-size: 11px; fill: var(--muted); }
+.chart .grid-line { stroke: var(--line); stroke-width: 1; }
+.chart .peak { fill: var(--ink); font-weight: 600; }
+
+.insights { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.insights li { display: grid; grid-template-columns: 8px 1fr; gap: 10px; color: var(--ink-2); }
+.insights li::before { content: ""; width: 8px; height: 8px; margin-top: 6px; border-radius: 2px; background: var(--accent); }
+.insights b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.hbars { display: grid; gap: 10px; }
+.hrow { display: grid; grid-template-columns: minmax(70px, 30%) 1fr auto; gap: 10px; align-items: center; cursor: default; padding: 2px 4px; margin: -2px -4px; border-radius: 6px; }
+.hrow:hover { background: var(--hover); }
+.hrow .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.hrow .track { height: 10px; background: var(--hover); border-radius: 5px; overflow: hidden; }
+.hrow:hover .track { background: var(--surface); }
+.hrow .fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
+.hrow .num { font-variant-numeric: tabular-nums; text-align: right; color: var(--ink); white-space: nowrap; }
+.hrow .num span { color: var(--muted); margin-left: 6px; font-size: 12px; }
+
+.stack { display: flex; gap: 2px; height: 28px; margin: 6px 0 14px; }
+.stack div { height: 100%; min-width: 4px; border-radius: 4px; }
+.legend { display: grid; gap: 8px; }
+.legend .item { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; padding: 2px 4px; margin: -2px -4px; border-radius: 6px; }
+.legend .item:hover { background: var(--hover); }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend .n { font-variant-numeric: tabular-nums; }
+.legend .n span { color: var(--muted); margin-left: 6px; }
+
+.hist { display: flex; align-items: flex-end; gap: 10px; height: 190px; }
+.hist .col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 6px; cursor: default; border-radius: 6px; padding: 2px; }
+.hist .col:hover { background: var(--hover); }
+.hist .bar-wrap { flex: 1 1 auto; display: flex; align-items: flex-end; }
+.hist .bar { width: 100%; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 2px; }
+.hist .v { text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.hist .l { text-align: center; font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.table-card { padding: 0; overflow: hidden; }
+.table-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 16px 18px; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 760px; }
+th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+th button { border: 0; background: none; padding: 0; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; display: inline-flex; gap: 4px; align-items: center; }
+th button:hover, th[aria-sort] button { color: var(--ink); }
+td.num { font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--hover); }
+.person b { display: block; font-weight: 600; }
+.person span { color: var(--muted); font-size: 12px; }
+.demo-tag { margin-left: 6px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 500; }
+.status-sel { padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.pager { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid var(--line); color: var(--ink-2); }
+.empty-row { padding: 32px 18px; text-align: center; color: var(--muted); }
+
+.empty { padding: 48px 24px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; background: var(--surface); }
+.empty h2 { font-family: var(--font-display); font-size: 20px; margin: 0 0 8px; }
+.empty p { margin: 0 auto 16px; max-width: 52ch; color: var(--ink-2); }
+.empty .actions { justify-content: center; }
+
+.drawer-back { position: fixed; inset: 0; z-index: 30; background: rgba(8, 12, 18, .5); display: flex; justify-content: flex-end; }
+.drawer-back[hidden] { display: none; }
+.drawer { width: min(440px, 100%); height: 100%; overflow-y: auto; background: var(--surface); border-left: 1px solid var(--line); padding: 20px max(16px, env(safe-area-inset-right, 0px)) 24px 20px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; gap: 16px; }
+.drawer h2 { margin: 0; font-family: var(--font-display); font-size: 20px; }
+.drawer-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+form.f { display: grid; gap: 12px; }
+form.f label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+form.f input, form.f select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 400; color: var(--ink); width: 100%; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; margin: 0; }
+.drop { display: grid; gap: 8px; padding: 16px; border: 1px dashed var(--line); border-radius: 10px; color: var(--ink-2); }
+.drop code { font-size: 12px; background: var(--hover); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+
+.tip { position: fixed; z-index: 50; pointer-events: none; max-width: 240px; padding: 8px 10px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.tip[hidden] { display: none; }
+.tip b { display: block; font-size: 13px; margin-bottom: 2px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 60; padding: 10px 16px; border-radius: 8px; background: var(--ink); color: var(--bg); box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); }
+.toast[hidden] { display: none; }
+@media (max-width: 560px) { h1 { font-size: 24px; } .hrow { grid-template-columns: minmax(60px, 34%) 1fr auto; } }
+@media (prefers-reduced-motion: no-preference) { .hrow .fill, .hist .bar, .stack div { transition: width .3s ease, height .3s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">XP&amp;UP</p>
+      <h1>Регистрации участников</h1>
+      <p class="sub" id="sub">Загружаем данные…</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-add" type="button">+ Добавить участника</button>
+      <button class="btn" id="btn-import" type="button">Импорт CSV</button>
+      <button class="btn" id="btn-export" type="button">Экспорт CSV</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+  <div class="empty" id="empty" hidden></div>
+
+  <div id="dash" hidden>
+    <section class="filters" aria-label="Фильтры">
+      <div class="seg" role="group" aria-label="Период" id="seg-period">
+        <button type="button" data-p="7" aria-pressed="false">7 дней</button>
+        <button type="button" data-p="30" aria-pressed="true">30 дней</button>
+        <button type="button" data-p="all" aria-pressed="false">Всё время</button>
+      </div>
+      <select class="field" id="f-status" aria-label="Статус">
+        <option value="">Все статусы</option>
+        <option value="confirmed">Подтверждён</option>
+        <option value="pending">Ожидает</option>
+        <option value="cancelled">Отменён</option>
+      </select>
+      <select class="field" id="f-source" aria-label="Источник"><option value="">Все источники</option></select>
+      <select class="field" id="f-track" aria-label="Направление"><option value="">Все направления</option></select>
+      <input class="field search" id="f-q" type="search" placeholder="Поиск: имя, email, город" aria-label="Поиск">
+      <button class="btn small" id="f-reset" type="button">Сбросить</button>
+    </section>
+
+    <section class="kpis" id="kpis" aria-label="Ключевые показатели"></section>
+
+    <section class="grid">
+      <div class="card c8">
+        <div class="card-head">
+          <div><h2>Динамика регистраций</h2><p class="hint" id="daily-hint"></p></div>
+          <div class="seg" role="group" aria-label="Вид графика" id="seg-mode">
+            <button type="button" data-m="daily" aria-pressed="true">По дням</button>
+            <button type="button" data-m="cum" aria-pressed="false">Накопительно</button>
+          </div>
+        </div>
+        <div class="chart" id="chart-daily"></div>
+      </div>
+      <div class="card c4">
+        <h2>Что видно из данных</h2>
+        <p class="hint">Считается по текущим фильтрам</p>
+        <ul class="insights" id="insights"></ul>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card c4"><h2>Источники</h2><p class="hint">Откуда пришли, и сколько из них подтвердили участие</p><div class="hbars" id="by-source"></div></div>
+      <div class="card c4"><h2>Направления</h2><p class="hint">Выбранный трек</p><div class="hbars" id="by-track"></div></div>
+      <div class="card c4"><h2>Города</h2><p class="hint">Шесть крупнейших, остальные в «Другие»</p><div class="hbars" id="by-city"></div></div>
+    </section>
+
+    <section class="grid">
+      <div class="card c6"><h2>Статусы</h2><p class="hint">Доля подтверждений и отмен</p><div id="by-status"></div></div>
+      <div class="card c6"><h2>Возраст</h2><p class="hint" id="age-hint">Участники по возрастным группам</p><div class="hist" id="by-age"></div></div>
+    </section>
+
+    <section class="card table-card" aria-label="Участники">
+      <div class="table-head">
+        <div><h2 style="margin:0;font-family:var(--font-display);font-size:16px">Участники</h2></div>
+        <span class="count" id="table-count"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr id="thead"></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager"></div>
+    </section>
+  </div>
+</div>
+
+<div class="drawer-back" id="drawer-back" hidden>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div class="drawer-top">
+      <h2 id="drawer-title">Новый участник</h2>
+      <button class="btn small" id="drawer-close" type="button">Закрыть</button>
+    </div>
+    <div class="seg" role="group" aria-label="Способ добавления" id="seg-add">
+      <button type="button" data-t="manual" aria-pressed="true">Вручную</button>
+      <button type="button" data-t="csv" aria-pressed="false">Из CSV</button>
+    </div>
+    <form class="f" id="form-add" autocomplete="off">
+      <label for="a-name">Имя и фамилия<input id="a-name" required maxlength="120"></label>
+      <label for="a-email">Email<input id="a-email" type="email" required maxlength="160"></label>
+      <div class="row2">
+        <label for="a-city">Город<input id="a-city" list="dl-city" maxlength="80"></label>
+        <label for="a-age">Возраст<input id="a-age" type="number" min="10" max="99"></label>
+      </div>
+      <div class="row2">
+        <label for="a-track">Направление<input id="a-track" list="dl-track" maxlength="60"></label>
+        <label for="a-source">Источник<input id="a-source" list="dl-source" maxlength="60"></label>
+      </div>
+      <div class="row2">
+        <label for="a-status">Статус
+          <select id="a-status"><option value="pending">Ожидает</option><option value="confirmed">Подтверждён</option><option value="cancelled">Отменён</option></select>
+        </label>
+        <label for="a-date">Дата регистрации<input id="a-date" type="date"></label>
+      </div>
+      <datalist id="dl-city"></datalist><datalist id="dl-track"></datalist><datalist id="dl-source"></datalist>
+      <p class="err" id="a-err" role="alert"></p>
+      <button class="btn primary" type="submit" id="a-submit">Сохранить участника</button>
+    </form>
+    <div id="csv-pane" hidden>
+      <div class="drop">
+        <span>Выберите CSV-файл с регистрациями. Столбцы находятся по заголовкам:</span>
+        <code>имя, email, город, возраст, направление, источник, статус, дата</code>
+        <span>Разделитель запятая, точка с запятой или табуляция. Участники с уже существующим email пропускаются.</span>
+        <input type="file" id="csv-file" accept=".csv,.tsv,.txt,text/csv">
+      </div>
+      <p id="csv-summary" style="margin:12px 0 0;color:var(--ink-2)"></p>
+      <button class="btn primary" id="csv-go" type="button" style="margin-top:12px" disabled>Импортировать</button>
+    </div>
+  </aside>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(async function () {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const nf = new Intl.NumberFormat("ru-RU");
+  const STATUS = {
+    confirmed: { label: "Подтверждён", color: "var(--good)" },
+    pending: { label: "Ожидает", color: "var(--warn)" },
+    cancelled: { label: "Отменён", color: "var(--bad)" }
+  };
+  const AGE_BUCKETS = [
+    { l: "до 18", f: (a) => a < 18 }, { l: "18–24", f: (a) => a >= 18 && a <= 24 },
+    { l: "25–34", f: (a) => a >= 25 && a <= 34 }, { l: "35–44", f: (a) => a >= 35 && a <= 44 },
+    { l: "45+", f: (a) => a >= 45 }
+  ];
+
+  function h(tag, props, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(props || {})) {
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, "");
+      else if (v !== false && v != null) e.setAttribute(k, v);
+    }
+    for (const kid of kids.flat()) {
+      if (kid == null || kid === false) continue;
+      e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    }
+    return e;
+  }
+  const svgNS = "http://www.w3.org/2000/svg";
+  function s(tag, attrs, text) {
+    const e = document.createElementNS(svgNS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const num = (n) => nf.format(n);
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+
+  /* ---------- state ---------- */
+  const state = {
+    rows: [], capacity: 150, loaded: false, canWrite: true, db: null,
+    f: { period: "30", status: "", source: "", track: "", q: "" },
+    sort: { key: "createdAt", dir: -1 }, page: 0, mode: "daily", csv: null, editCap: false
+  };
+  const PAGE = 10;
+
+  /* ---------- dates ---------- */
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const dayKey = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const rowDate = (r) => new Date(r.createdAt);
+  const fmtShort = (d) => d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  const fmtLong = (d) => d.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "long" });
+
+  /* ---------- filtering ---------- */
+  function baseFilter(rows) {
+    const { status, source, track, q } = state.f;
+    const needle = q.trim().toLowerCase();
+    return rows.filter((r) =>
+      (!status || r.status === status) && (!source || r.source === source) && (!track || r.track === track) &&
+      (!needle || [r.name, r.email, r.city].some((v) => String(v || "").toLowerCase().includes(needle))));
+  }
+  function windowBounds() {
+    if (state.f.period === "all") return null;
+    const n = +state.f.period, today = startOfDay(new Date());
+    return { n, from: addDays(today, -(n - 1)), to: addDays(today, 1), prevFrom: addDays(today, -(2 * n - 1)) };
+  }
+  function filtered() {
+    const base = baseFilter(state.rows), w = windowBounds();
+    if (!w) return base;
+    return base.filter((r) => { const d = rowDate(r); return d >= w.from && d < w.to; });
+  }
+  function prevCount() {
+    const w = windowBounds(); if (!w) return null;
+    return baseFilter(state.rows).filter((r) => { const d = rowDate(r); return d >= w.prevFrom && d < w.from; }).length;
+  }
+  function countBy(rows, key, fallback) {
+    const m = new Map();
+    for (const r of rows) {
+      const k = (r[key] && String(r[key]).trim()) || fallback;
+      const e = m.get(k) || { label: k, value: 0, confirmed: 0 };
+      e.value++; if (r.status === "confirmed") e.confirmed++;
+      m.set(k, e);
+    }
+    return [...m.values()].sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, "ru"));
+  }
+
+  /* ---------- tooltip & toast ---------- */
+  const tip = $("#tip");
+  function showTip(ev, title, lines) {
+    tip.replaceChildren(h("b", { text: title }), ...lines.map((t) => h("div", { text: t })));
+    tip.hidden = false;
+    const pad = 12, w = tip.offsetWidth, hh = tip.offsetHeight;
+    let x = ev.clientX + pad, y = ev.clientY + pad;
+    if (x + w > window.innerWidth - 8) x = ev.clientX - w - pad;
+    if (y + hh > window.innerHeight - 8) y = ev.clientY - hh - pad;
+    tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+  let toastTimer;
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3600);
+  }
+  function errText(e) {
+    const c = e && e.code;
+    if (c === "invalid_argument") return "Нет прав на запись. Нужен доступ «Участник» или выше.";
+    if (c === "quota_exceeded") return "Достигнут лимит базы данных.";
+    return "Не удалось сохранить" + (e && e.message ? ": " + e.message : ".");
+  }
+
+  /* ---------- KPIs ---------- */
+  function renderKpis() {
+    const rows = filtered(), n = rows.length;
+    const conf = rows.filter((r) => r.status === "confirmed").length;
+    const pend = rows.filter((r) => r.status === "pending").length;
+    const canc = rows.filter((r) => r.status === "cancelled").length;
+    const prev = prevCount(), w = windowBounds();
+    const taken = state.rows.filter((r) => r.status !== "cancelled").length;
+    const free = state.capacity - taken;
+
+    let deltaEl;
+    if (prev == null) deltaEl = h("span", { class: "delta flat", text: "за всё время" });
+    else if (prev === 0) deltaEl = h("span", { class: "delta flat", text: n ? "в прошлом периоде регистраций не было" : "—" });
+    else {
+      const d = Math.round(((n - prev) / prev) * 100);
+      deltaEl = h("span", {}, h("span", { class: "delta " + (d > 0 ? "up" : d < 0 ? "down" : "flat"), text: (d > 0 ? "▲ +" : d < 0 ? "▼ " : "= ") + d + "%" }), " к предыдущим " + w.n + " дн.");
+    }
+    const capNote = state.editCap
+      ? h("span", { class: "cap-edit" },
+          h("input", { id: "cap-input", type: "number", min: "1", value: state.capacity, "aria-label": "Количество мест" }),
+          h("button", { class: "btn small primary", type: "button", onclick: saveCapacity, text: "Ок" }))
+      : h("span", {}, free >= 0 ? "Свободно " + num(free) : "Превышение на " + num(-free), " · ",
+          state.canWrite ? h("button", { class: "linkbtn", type: "button", onclick: () => { state.editCap = true; renderKpis(); setTimeout(() => { const i = $("#cap-input"); if (i) i.focus(); }, 0); }, text: "изменить" }) : null);
+
+    const meter = (parts) => h("div", { class: "meter", "aria-hidden": "true" }, parts.map((p) => h("i", { style: "width:" + p.w + "%;background:" + p.c })));
+    $("#kpis").replaceChildren(
+      h("div", { class: "card kpi" }, h("div", { class: "label", text: "Регистраций" }), h("div", { class: "value", text: num(n) }), h("div", { class: "note" }, deltaEl)),
+      h("div", { class: "card kpi" }, h("div", { class: "label", text: "Подтверждено" }),
+        h("div", { class: "value" }, num(conf), " ", h("small", { text: pct(conf, n) + "%" })),
+        meter([{ w: pct(conf, n), c: STATUS.confirmed.color }, { w: pct(pend, n), c: STATUS.pending.color }]),
+        h("div", { class: "note", text: "Ожидают подтверждения: " + num(pend) })),
+      h("div", { class: "card kpi" }, h("div", { class: "label", text: "Занято мест" }),
+        h("div", { class: "value" }, num(taken), " ", h("small", { text: "из " + num(state.capacity) })),
+        meter([{ w: Math.min(100, pct(taken, state.capacity)), c: "var(--accent)" }]),
+        h("div", { class: "note" }, capNote)),
+      h("div", { class: "card kpi" }, h("div", { class: "label", text: "Отмены" }),
+        h("div", { class: "value" }, num(canc), " ", h("small", { text: pct(canc, n) + "%" })),
+        h("div", { class: "note", text: canc ? "Отказались от участия" : "Отмен нет" }))
+    );
+  }
+  async function saveCapacity() {
+    const v = Math.round(+$("#cap-input").value);
+    state.editCap = false;
+    if (!(v > 0)) { renderKpis(); return; }
+    try { await state.db.doc("settings/event").set({ capacity: v }); state.capacity = v; }
+    catch (e) { toast(errText(e)); }
+    renderKpis(); renderInsights();
+  }
+
+  /* ---------- daily chart ---------- */
+  function series() {
+    const base = baseFilter(state.rows), today = startOfDay(new Date()), w = windowBounds();
+    let from;
+    if (w) from = w.from;
+    else {
+      const ds = base.map(rowDate).filter((d) => !isNaN(d));
+      from = ds.length ? startOfDay(new Date(Math.min(...ds))) : today;
+      const cap = addDays(today, -89); if (from < cap) from = cap;
+    }
+    const days = [];
+    for (let d = new Date(from); d <= today; d = addDays(d, 1)) days.push({ d: new Date(d), k: dayKey(d), n: 0, cum: 0 });
+    const idx = new Map(days.map((x, i) => [x.k, i]));
+    let before = 0;
+    for (const r of base) {
+      const d = rowDate(r); if (isNaN(d)) continue;
+      const k = dayKey(d);
+      if (idx.has(k)) days[idx.get(k)].n++; else if (startOfDay(d) < from) before++;
+    }
+    let c = before; for (const x of days) { c += x.n; x.cum = c; }
+    return days;
+  }
+  function niceMax(v) {
+    if (v <= 4) return 4;
+    const x = v / 4, p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p;
+    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p * 4;
+  }
+  function renderDaily() {
+    const box = $("#chart-daily");
+    const days = series(), W = Math.max(260, box.clientWidth), H = 240;
+    const ml = 36, mr = 10, mt = 14, mb = 26, iw = W - ml - mr, ih = H - mt - mb;
+    const cum = state.mode === "cum";
+    const vals = days.map((x) => (cum ? x.cum : x.n));
+    const max = niceMax(Math.max(1, ...vals));
+    const y = (v) => mt + ih - (v / max) * ih;
+    const svg = s("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": cum ? "Накопительное число регистраций" : "Регистрации по дням" });
+    for (let i = 0; i <= 4; i++) {
+      const v = (max / 4) * i, yy = y(v);
+      svg.append(s("line", { class: "grid-line", x1: ml, x2: W - mr, y1: yy, y2: yy }));
+      svg.append(s("text", { x: ml - 6, y: yy + 4, "text-anchor": "end" }, num(Math.round(v))));
+    }
+    const n = days.length, slot = iw / Math.max(1, n);
+    const hl = s("rect", { y: mt, height: ih, width: slot, fill: "var(--hover)", visibility: "hidden" });
+    svg.append(hl);
+    const step = Math.max(1, Math.ceil(n / 7));
+    days.forEach((x, i) => {
+      if ((n - 1 - i) % step === 0) svg.append(s("text", { x: ml + slot * (i + 0.5), y: H - 8, "text-anchor": "middle" }, fmtShort(x.d)));
+    });
+    if (!cum) {
+      const gap = slot > 8 ? 2 : 1, bw = Math.max(1, slot - gap * 2), r = Math.min(4, bw / 2);
+      let peak = -1;
+      vals.forEach((v, i) => { if (v > 0 && (peak < 0 || v > vals[peak])) peak = i; });
+      days.forEach((x, i) => {
+        if (!x.n) return;
+        const bx = ml + slot * i + gap, by = y(x.n), bh = mt + ih - by;
+        svg.append(s("path", { fill: "var(--bar)", d: "M" + bx + " " + (by + bh) + "V" + (by + r) + "a" + r + " " + r + " 0 0 1 " + r + " " + -r + "H" + (bx + bw - r) + "a" + r + " " + r + " 0 0 1 " + r + " " + r + "V" + (by + bh) + "Z" }));
+      });
+      if (peak >= 0) svg.append(s("text", { class: "peak", x: ml + slot * (peak + 0.5), y: y(vals[peak]) - 5, "text-anchor": "middle" }, String(vals[peak])));
+    } else {
+      const px = (i) => ml + slot * (i + 0.5);
+      let d = "";
+      days.forEach((x, i) => { d += (i ? "L" : "M") + px(i) + " " + y(x.cum); });
+      svg.append(s("path", { d: d + "L" + px(n - 1) + " " + (mt + ih) + "L" + px(0) + " " + (mt + ih) + "Z", fill: "var(--accent)", opacity: ".14" }));
+      svg.append(s("path", { d, fill: "none", stroke: "var(--accent)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      const last = days[n - 1];
+      if (last) {
+        svg.append(s("circle", { cx: px(n - 1), cy: y(last.cum), r: 4, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2 }));
+        svg.append(s("text", { class: "peak", x: px(n - 1), y: y(last.cum) - 9, "text-anchor": "end" }, String(last.cum)));
+      }
+    }
+    const cap = s("rect", { x: ml, y: mt, width: iw, height: ih, fill: "transparent" });
+    const move = (ev) => {
+      const r = svg.getBoundingClientRect(), px = ((ev.clientX - r.left) / r.width) * W;
+      const i = Math.max(0, Math.min(n - 1, Math.floor((px - ml) / slot)));
+      hl.setAttribute("x", ml + slot * i); hl.setAttribute("visibility", "visible");
+      const x = days[i];
+      showTip(ev, fmtLong(x.d), ["Регистраций за день: " + x.n, "Всего к этому дню: " + num(x.cum)]);
+    };
+    cap.addEventListener("pointermove", move);
+    cap.addEventListener("pointerleave", () => { hl.setAttribute("visibility", "hidden"); hideTip(); });
+    svg.append(cap);
+    box.replaceChildren(svg);
+    const total = days.reduce((a, x) => a + x.n, 0);
+    $("#daily-hint").textContent = state.f.period === "all" ? "За всё время (не больше 90 последних дней), всего " + num(total) : "Последние " + state.f.period + " дн., всего " + num(total);
+  }
+
+  /* ---------- breakdown charts ---------- */
+  function renderHbars(sel, entries, opts) {
+    const box = $(sel), total = opts.total;
+    if (!entries.length) { box.replaceChildren(h("p", { class: "hint", text: "Нет данных по текущим фильтрам" })); return; }
+    let list = entries;
+    if (opts.limit && entries.length > opts.limit) {
+      const top = entries.slice(0, opts.limit), rest = entries.slice(opts.limit);
+      list = [...top, { label: "Другие (" + rest.length + ")", value: rest.reduce((a, x) => a + x.value, 0), confirmed: rest.reduce((a, x) => a + x.confirmed, 0) }];
+    }
+    const max = Math.max(...list.map((x) => x.value));
+    box.replaceChildren(...list.map((e) => {
+      const row = h("div", { class: "hrow" },
+        h("div", { class: "name", text: e.label }),
+        h("div", { class: "track" }, h("div", { class: "fill", style: "width:" + (e.value / max) * 100 + "%" })),
+        h("div", { class: "num" }, num(e.value), h("span", { text: opts.conv ? pct(e.confirmed, e.value) + "% подтв." : pct(e.value, total) + "%" })));
+      row.addEventListener("pointermove", (ev) => showTip(ev, e.label, [num(e.value) + " " + plural(e.value, "регистрация", "регистрации", "регистраций") + " (" + pct(e.value, total) + "%)", "Подтверждено: " + e.confirmed + " (" + pct(e.confirmed, e.value) + "%)"]));
+      row.addEventListener("pointerleave", hideTip);
+      return row;
+    }));
+  }
+  function renderStatus(rows) {
+    const box = $("#by-status"), n = rows.length;
+    if (!n) { box.replaceChildren(h("p", { class: "hint", text: "Нет данных по текущим фильтрам" })); return; }
+    const items = Object.entries(STATUS).map(([k, v]) => ({ k, ...v, n: rows.filter((r) => r.status === k).length }));
+    const stack = h("div", { class: "stack", role: "img", "aria-label": "Распределение по статусам" }, items.filter((i) => i.n).map((i) => {
+      const seg = h("div", { style: "flex:" + i.n + " 1 0;background:" + i.color });
+      seg.addEventListener("pointermove", (ev) => showTip(ev, i.label, [num(i.n) + " (" + pct(i.n, n) + "%)"]));
+      seg.addEventListener("pointerleave", hideTip);
+      return seg;
+    }));
+    const legend = h("div", { class: "legend" }, items.map((i) => {
+      const it = h("div", { class: "item" }, h("span", { class: "dot", style: "background:" + i.color }), h("span", { text: i.label }), h("span", { class: "n" }, num(i.n), h("span", { text: pct(i.n, n) + "%" })));
+      return it;
+    }));
+    box.replaceChildren(stack, legend);
+  }
+  function renderAge(rows) {
+    const box = $("#by-age"), ages = rows.map((r) => +r.age).filter((a) => a > 0);
+    $("#age-hint").textContent = ages.length ? "Средний возраст " + (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(1).replace(".", ",") + " · указан у " + pct(ages.length, rows.length) + "% участников" : "Возраст не указан";
+    if (!ages.length) { box.replaceChildren(h("p", { class: "hint", text: "Нет данных по текущим фильтрам" })); return; }
+    const counts = AGE_BUCKETS.map((b) => ages.filter(b.f).length), max = Math.max(1, ...counts);
+    box.replaceChildren(...AGE_BUCKETS.map((b, i) => {
+      const col = h("div", { class: "col" }, h("div", { class: "v", text: counts[i] }), h("div", { class: "bar-wrap", style: "height:120px" }, h("div", { class: "bar", style: "height:" + (counts[i] / max) * 100 + "%" })), h("div", { class: "l", text: b.l }));
+      col.addEventListener("pointermove", (ev) => showTip(ev, b.l + " лет", [counts[i] + " (" + pct(counts[i], ages.length) + "%)"]));
+      col.addEventListener("pointerleave", hideTip);
+      return col;
+    }));
+  }
+  function renderBreakdowns() {
+    const rows = filtered(), n = rows.length;
+    renderHbars("#by-source", countBy(rows, "source", "Не указан"), { total: n, conv: true });
+    renderHbars("#by-track", countBy(rows, "track", "Не указано"), { total: n });
+    renderHbars("#by-city", countBy(rows, "city", "Не указан"), { total: n, limit: 6 });
+    renderStatus(rows); renderAge(rows);
+  }
+
+  /* ---------- insights ---------- */
+  function renderInsights() {
+    const rows = filtered(), n = rows.length, ul = $("#insights"), items = [];
+    if (!n) { ul.replaceChildren(h("li", { text: "По текущим фильтрам регистраций нет." })); return; }
+    const b = (t) => h("b", { text: t });
+    const prev = prevCount(), w = windowBounds();
+    if (prev != null && prev > 0) {
+      const d = Math.round(((n - prev) / prev) * 100);
+      items.push(h("li", {}, h("span", {}, "За " + w.n + " дн. пришло ", b(num(n)), " " + plural(n, "регистрация", "регистрации", "регистраций") + ": ", b((d >= 0 ? "на " : "на ") + Math.abs(d) + "% " + (d >= 0 ? "больше" : "меньше")), " чем за предыдущие " + w.n + ".")));
+    }
+    const src = countBy(rows, "source", "Не указан");
+    if (src.length) items.push(h("li", {}, h("span", {}, "Главный источник: ", b(src[0].label), ", " + num(src[0].value) + " (" + pct(src[0].value, n) + "%).")));
+    const good = src.filter((x) => x.value >= 5).sort((a, c) => c.confirmed / c.value - a.confirmed / a.value)[0];
+    if (good && good.label !== "Не указан") items.push(h("li", {}, h("span", {}, "Лучше всего подтверждают участие из канала ", b(good.label), ": ", b(pct(good.confirmed, good.value) + "%"), ".")));
+    const days = series(), peak = days.reduce((a, x) => (x.n > (a ? a.n : 0) ? x : a), null);
+    if (peak && peak.n > 1) items.push(h("li", {}, h("span", {}, "Пик регистраций: ", b(fmtShort(peak.d)), ", " + peak.n + " " + plural(peak.n, "человек", "человека", "человек") + ".")));
+    const city = countBy(rows, "city", "Не указан").filter((x) => x.label !== "Не указан")[0];
+    if (city) items.push(h("li", {}, h("span", {}, "Больше всего участников из города ", b(city.label), ": ", b(pct(city.value, n) + "%"), ".")));
+    const pend = state.rows.filter((r) => r.status === "pending").length;
+    if (pend) items.push(h("li", {}, h("span", {}, b(num(pend)), " " + plural(pend, "участник ждёт", "участника ждут", "участников ждут") + " подтверждения.")));
+    ul.replaceChildren(...items.slice(0, 6));
+  }
+
+  /* ---------- table ---------- */
+  const COLS = [
+    { k: "name", t: "Участник" }, { k: "city", t: "Город" }, { k: "track", t: "Направление" },
+    { k: "source", t: "Источник" }, { k: "age", t: "Возраст", num: true }, { k: "createdAt", t: "Дата" }, { k: "status", t: "Статус" }
+  ];
+  function renderHead() {
+    $("#thead").replaceChildren(...COLS.map((c) => {
+      const active = state.sort.key === c.k;
+      const th = h("th", { scope: "col", "aria-sort": active ? (state.sort.dir > 0 ? "ascending" : "descending") : false },
+        h("button", { type: "button", onclick: () => { state.sort = { key: c.k, dir: active ? -state.sort.dir : c.k === "createdAt" ? -1 : 1 }; state.page = 0; renderHead(); renderTable(); } },
+          c.t, active ? (state.sort.dir > 0 ? " ↑" : " ↓") : ""));
+      return th;
+    }), h("th", { scope: "col", text: "" }));
+  }
+  function sortRows(rows) {
+    const { key, dir } = state.sort;
+    return rows.slice().sort((a, b) => {
+      let x = a[key], y = b[key];
+      if (key === "createdAt") { x = rowDate(a).getTime() || 0; y = rowDate(b).getTime() || 0; }
+      if (key === "age") { x = +x || 0; y = +y || 0; }
+      if (typeof x === "number") return (x - y) * dir;
+      return String(x || "").localeCompare(String(y || ""), "ru") * dir;
+    });
+  }
+  const pendingDelete = new Set();
+  function renderTable() {
+    const rows = sortRows(filtered()), n = rows.length;
+    const pages = Math.max(1, Math.ceil(n / PAGE));
+    if (state.page >= pages) state.page = pages - 1;
+    const slice = rows.slice(state.page * PAGE, state.page * PAGE + PAGE);
+    $("#table-count").textContent = "Найдено: " + num(n);
+    const tb = $("#tbody");
+    if (!slice.length) tb.replaceChildren(h("tr", {}, h("td", { colspan: COLS.length + 1, class: "empty-row", text: "По текущим фильтрам участников нет." })));
+    else tb.replaceChildren(...slice.map((r) => {
+      const sel = h("select", { class: "status-sel", "aria-label": "Статус: " + r.name, disabled: !state.canWrite, onchange: (ev) => setStatus(r, ev.target.value) },
+        Object.entries(STATUS).map(([k, v]) => h("option", { value: k, selected: r.status === k }, v.label)));
+      const stat = h("span", { style: "display:inline-flex;align-items:center;gap:8px" }, h("span", { class: "dot", style: "background:" + (STATUS[r.status] || STATUS.pending).color }), sel);
+      const del = h("button", { class: "btn small" + (pendingDelete.has(r.id) ? " danger" : ""), type: "button", disabled: !state.canWrite,
+        onclick: () => {
+          if (!pendingDelete.has(r.id)) { pendingDelete.add(r.id); renderTable(); setTimeout(() => { pendingDelete.delete(r.id); renderTable(); }, 3500); return; }
+          pendingDelete.delete(r.id); removeRow(r);
+        } }, pendingDelete.has(r.id) ? "Удалить?" : "Удалить");
+      const d = rowDate(r);
+      return h("tr", {},
+        h("td", { class: "person" }, h("b", {}, r.name || "Без имени", r.demo ? h("span", { class: "demo-tag", text: "демо" }) : null), h("span", { text: r.email || "" })),
+        h("td", { text: r.city || "—" }), h("td", { text: r.track || "—" }), h("td", { text: r.source || "—" }),
+        h("td", { class: "num", text: r.age || "—" }),
+        h("td", { class: "num", text: isNaN(d) ? "—" : d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit" }) }),
+        h("td", {}, stat), h("td", {}, del));
+    }));
+    const from = n ? state.page * PAGE + 1 : 0, to = Math.min(n, (state.page + 1) * PAGE);
+    $("#pager").replaceChildren(
+      h("span", { text: from + "–" + to + " из " + num(n) }),
+      h("span", { style: "display:inline-flex;gap:8px" },
+        h("button", { class: "btn small", type: "button", disabled: state.page === 0, onclick: () => { state.page--; renderTable(); }, text: "← Назад" }),
+        h("button", { class: "btn small", type: "button", disabled: state.page >= pages - 1, onclick: () => { state.page++; renderTable(); }, text: "Вперёд →" })));
+  }
+
+  /* ---------- writes ---------- */
+  async function setStatus(r, status) {
+    try { await state.db.doc("participants/" + r.id).update({ status }); }
+    catch (e) { toast(errText(e)); renderTable(); }
+  }
+  async function removeRow(r) {
+    try { await state.db.doc("participants/" + r.id).delete(); toast("Участник удалён"); }
+    catch (e) { toast(errText(e)); }
+  }
+  async function removeDemo() {
+    const demo = state.rows.filter((r) => r.demo);
+    $("#btn-demo-del") && ($("#btn-demo-del").disabled = true);
+    try {
+      for (let i = 0; i < demo.length; i++) { await state.db.doc("participants/" + demo[i].id).delete(); }
+      toast("Демо-данные удалены: " + demo.length);
+    } catch (e) { toast(errText(e)); }
+  }
+
+  /* ---------- filters ---------- */
+  let optKey = "";
+  function syncFilterOptions() {
+    const srcs = [...new Set(state.rows.map((r) => r.source).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
+    const trs = [...new Set(state.rows.map((r) => r.track).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
+    const cities = [...new Set(state.rows.map((r) => r.city).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
+    const key = srcs.join("|") + "#" + trs.join("|") + "#" + cities.join("|");
+    if (key === optKey) return; optKey = key;
+    const fill = (sel, all, vals, cur) => { sel.replaceChildren(h("option", { value: "" }, all), ...vals.map((v) => h("option", { value: v, selected: v === cur }, v))); };
+    fill($("#f-source"), "Все источники", srcs, state.f.source);
+    fill($("#f-track"), "Все направления", trs, state.f.track);
+    $("#dl-source").replaceChildren(...srcs.map((v) => h("option", { value: v })));
+    $("#dl-track").replaceChildren(...trs.map((v) => h("option", { value: v })));
+    $("#dl-city").replaceChildren(...cities.map((v) => h("option", { value: v })));
+  }
+  function renderBanner() {
+    const demo = state.rows.filter((r) => r.demo).length, b = $("#banner");
+    if (!demo) { b.hidden = true; return; }
+    b.hidden = false;
+    b.replaceChildren(h("span", { text: "В таблице " + demo + " демонстрационных записей. Это не настоящие участники." }),
+      h("button", { class: "btn small", id: "btn-demo-del", type: "button", disabled: !state.canWrite, onclick: removeDemo, text: "Удалить демо-данные" }));
+  }
+  function renderAll() {
+    const has = state.rows.length > 0;
+    $("#dash").hidden = !has || !state.loaded;
+    $("#empty").hidden = has || !state.loaded;
+    const confirmed = state.rows.filter((r) => r.status === "confirmed").length;
+    $("#sub").textContent = state.loaded ? (has ? num(state.rows.length) + " " + plural(state.rows.length, "участник", "участника", "участников") + " в базе, подтверждено " + num(confirmed) + ". Данные обновляются сами." : "Регистраций пока нет") : "Загружаем данные…";
+    $("#btn-add").disabled = !state.canWrite; $("#btn-import").disabled = !state.canWrite;
+    $("#btn-export").disabled = !state.rows.length;
+    renderBanner();
+    if (!has) return;
+    syncFilterOptions();
+    renderKpis(); renderInsights(); renderDaily(); renderBreakdowns(); renderTable();
+  }
+  function bindFilters() {
+    $("#seg-period").addEventListener("click", (ev) => {
+      const b = ev.target.closest("button"); if (!b) return;
+      state.f.period = b.dataset.p; state.page = 0;
+      for (const x of $("#seg-period").children) x.setAttribute("aria-pressed", String(x === b));
+      renderAll();
+    });
+    $("#seg-mode").addEventListener("click", (ev) => {
+      const b = ev.target.closest("button"); if (!b) return;
+      state.mode = b.dataset.m;
+      for (const x of $("#seg-mode").children) x.setAttribute("aria-pressed", String(x === b));
+      renderDaily();
+    });
+    for (const [id, key] of [["#f-status", "status"], ["#f-source", "source"], ["#f-track", "track"]])
+      $(id).addEventListener("change", (ev) => { state.f[key] = ev.target.value; state.page = 0; renderAll(); });
+    let t; $("#f-q").addEventListener("input", (ev) => { clearTimeout(t); t = setTimeout(() => { state.f.q = ev.target.value; state.page = 0; renderAll(); }, 150); });
+    $("#f-reset").addEventListener("click", () => {
+      state.f = { period: "all", status: "", source: "", track: "", q: "" }; state.page = 0;
+      $("#f-status").value = ""; $("#f-source").value = ""; $("#f-track").value = ""; $("#f-q").value = "";
+      for (const x of $("#seg-period").children) x.setAttribute("aria-pressed", String(x.dataset.p === "all"));
+      renderAll();
+    });
+  }
+
+  /* ---------- drawer: add / import ---------- */
+  function openDrawer(tab) {
+    $("#drawer-back").hidden = false; setTab(tab);
+    $("#a-date").value = dayKey(new Date()); $("#a-err").textContent = "";
+    if (tab === "manual") setTimeout(() => $("#a-name").focus(), 0);
+  }
+  const closeDrawer = () => { $("#drawer-back").hidden = true; };
+  function setTab(t) {
+    for (const x of $("#seg-add").children) x.setAttribute("aria-pressed", String(x.dataset.t === t));
+    $("#form-add").hidden = t !== "manual"; $("#csv-pane").hidden = t !== "csv";
+    $("#drawer-title").textContent = t === "manual" ? "Новый участник" : "Импорт из CSV";
+  }
+  function dateFromInput(v) {
+    if (!v) return new Date().toISOString();
+    if (v === dayKey(new Date())) return new Date().toISOString();
+    return new Date(v + "T12:00:00").toISOString();
+  }
+  const emailKey = (e) => String(e || "").trim().toLowerCase();
+  async function submitAdd(ev) {
+    ev.preventDefault();
+    const err = $("#a-err"), email = emailKey($("#a-email").value), name = $("#a-name").value.trim();
+    if (!name) { err.textContent = "Укажите имя."; return; }
+    if (state.rows.some((r) => emailKey(r.email) === email)) { err.textContent = "Участник с таким email уже зарегистрирован."; return; }
+    const age = parseInt($("#a-age").value, 10);
+    const doc = { name, email, city: $("#a-city").value.trim(), age: age > 0 ? age : null, track: $("#a-track").value.trim(), source: $("#a-source").value.trim(), status: $("#a-status").value, createdAt: dateFromInput($("#a-date").value) };
+    $("#a-submit").disabled = true;
+    try { await state.db.collection("participants").add(doc); toast("Участник добавлен: " + name); $("#form-add").reset(); closeDrawer(); }
+    catch (e) { err.textContent = errText(e); }
+    $("#a-submit").disabled = false;
+  }
+
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, "");
+    const first = text.split(/\r?\n/)[0] || "";
+    const delim = [";", "\t", ","].map((d) => [d, first.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
+    const out = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"') q = true;
+      else if (c === delim) { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cur); cur = ""; if (row.some((x) => x.trim())) out.push(row); row = []; }
+      else cur += c;
+    }
+    row.push(cur); if (row.some((x) => x.trim())) out.push(row);
+    return out;
+  }
+  const ALIASES = {
+    name: ["имя", "фио", "name", "участник", "full name", "fullname", "имя и фамилия"],
+    email: ["email", "e-mail", "почта", "mail", "эл. почта"],
+    city: ["город", "city"], age: ["возраст", "age"],
+    track: ["направление", "трек", "track", "direction"], source: ["источник", "source", "канал", "utm_source"],
+    status: ["статус", "status"], date: ["дата", "дата регистрации", "date", "createdat", "created_at", "registered", "registered_at"]
+  };
+  function normStatus(v) {
+    const t = String(v || "").toLowerCase();
+    if (/подтв|confirm|оплач|paid|approved/.test(t)) return "confirmed";
+    if (/отмен|cancel|отказ|declin/.test(t)) return "cancelled";
+    return "pending";
+  }
+  function parseDate(v) {
+    const t = String(v || "").trim(); if (!t) return new Date().toISOString();
+    const m = t.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})(?:[ T](\d{1,2}):(\d{2}))?/);
+    let d;
+    if (m) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; d = new Date(y, +m[2] - 1, +m[1], m[4] ? +m[4] : 12, m[5] ? +m[5] : 0); }
+    else d = new Date(t);
+    return isNaN(d) ? new Date().toISOString() : d.toISOString();
+  }
+  function csvToDocs(text) {
+    const table = parseCSV(text);
+    if (table.length < 2) return { docs: [], skipped: 0, dup: 0, error: "В файле нет строк с данными." };
+    const head = table[0].map((x) => x.trim().toLowerCase()), col = {};
+    for (const [k, names] of Object.entries(ALIASES)) col[k] = head.findIndex((x) => names.includes(x));
+    if (col.name < 0 && col.email < 0) return { docs: [], skipped: 0, dup: 0, error: "Не найдены столбцы «имя» или «email». Проверьте заголовки." };
+    const seen = new Set(state.rows.map((r) => emailKey(r.email)).filter(Boolean));
+    const docs = []; let skipped = 0, dup = 0;
+    for (const r of table.slice(1)) {
+      const g = (k) => (col[k] >= 0 ? (r[col[k]] || "").trim() : "");
+      const email = emailKey(g("email")), name = g("name") || email;
+      if (!name) { skipped++; continue; }
+      if (email && seen.has(email)) { dup++; continue; }
+      if (email) seen.add(email);
+      const age = parseInt(g("age"), 10);
+      docs.push({ name, email, city: g("city"), age: age > 0 && age < 100 ? age : null, track: g("track"), source: g("source"), status: normStatus(g("status")), createdAt: parseDate(g("date")) });
+    }
+    return { docs, skipped, dup };
+  }
+  async function onCsvFile(ev) {
+    const f = ev.target.files[0]; state.csv = null; $("#csv-go").disabled = true;
+    if (!f) { $("#csv-summary").textContent = ""; return; }
+    const text = await f.text(), res = csvToDocs(text), sum = $("#csv-summary");
+    if (res.error) { sum.textContent = res.error; return; }
+    state.csv = res.docs.slice(0, 500);
+    sum.textContent = "Будет добавлено: " + num(state.csv.length) + (res.docs.length > 500 ? " (первые 500)" : "") + ". Пропущено дублей по email: " + res.dup + ", пустых строк: " + res.skipped + ".";
+    $("#csv-go").disabled = !state.csv.length;
+  }
+  async function runImport() {
+    const docs = state.csv; if (!docs || !docs.length) return;
+    $("#csv-go").disabled = true; let ok = 0;
+    try {
+      for (const d of docs) { await state.db.collection("participants").add(d); ok++; if (ok % 10 === 0) $("#csv-summary").textContent = "Импортируем… " + ok + " из " + docs.length; }
+      toast("Импортировано участников: " + ok); state.csv = null; $("#csv-file").value = ""; $("#csv-summary").textContent = ""; closeDrawer();
+    } catch (e) { toast("Импортировано " + ok + " из " + docs.length + ". " + errText(e)); $("#csv-go").disabled = false; }
+  }
+
+  /* ---------- export ---------- */
+  async function exportCsv() {
+    const dl = await claude.use("downloads");
+    if (!dl) { toast("Экспорт недоступен в этом режиме просмотра."); return; }
+    const rows = sortRows(filtered()), esc = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+    const head = ["Имя", "Email", "Город", "Возраст", "Направление", "Источник", "Статус", "Дата регистрации"];
+    const lines = [head.map(esc).join(",")].concat(rows.map((r) => [r.name, r.email, r.city, r.age, r.track, r.source, (STATUS[r.status] || STATUS.pending).label, isNaN(rowDate(r)) ? "" : rowDate(r).toISOString().slice(0, 10)].map(esc).join(",")));
+    try { await dl.save({ filename: "xpup-registrations-" + dayKey(new Date()) + ".csv", data: "﻿" + lines.join("\r\n") }); toast("Файл сохранён"); }
+    catch (e) { if (!e || e.code !== "declined") toast("Не удалось сохранить файл."); }
+  }
+
+  /* ---------- empty state ---------- */
+  function renderEmpty() {
+    $("#empty").replaceChildren(
+      h("h2", { text: "Регистраций пока нет" }),
+      h("p", { text: "Добавьте первого участника вручную или загрузите CSV-выгрузку с сайта. Графики и выводы появятся сразу после первой записи." }),
+      h("div", { class: "actions" },
+        h("button", { class: "btn primary", type: "button", disabled: !state.canWrite, onclick: () => openDrawer("csv"), text: "Загрузить CSV" }),
+        h("button", { class: "btn", type: "button", disabled: !state.canWrite, onclick: () => openDrawer("manual"), text: "Добавить вручную" })));
+  }
+
+  /* ---------- wiring ---------- */
+  $("#btn-add").addEventListener("click", () => openDrawer("manual"));
+  $("#btn-import").addEventListener("click", () => openDrawer("csv"));
+  $("#btn-export").addEventListener("click", exportCsv);
+  $("#drawer-close").addEventListener("click", closeDrawer);
+  $("#drawer-back").addEventListener("pointerdown", (ev) => { if (ev.target.id === "drawer-back") closeDrawer(); });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("#drawer-back").hidden) closeDrawer(); });
+  $("#seg-add").addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (b) setTab(b.dataset.t); });
+  $("#form-add").addEventListener("submit", submitAdd);
+  $("#csv-file").addEventListener("change", onCsvFile);
+  $("#csv-go").addEventListener("click", runImport);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.id === "cap-input") saveCapacity(); });
+  bindFilters(); renderHead(); renderEmpty();
+  let rz; new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (!$("#dash").hidden) renderDaily(); }); }).observe($("#chart-daily"));
+
+  /* ---------- data ---------- */
+  const db = await claude.use("db");
+  if (!db) {
+    $("#sub").textContent = "Войдите в Claude, чтобы увидеть данные регистраций.";
+    $("#btn-add").disabled = $("#btn-import").disabled = $("#btn-export").disabled = true;
+    return;
+  }
+  state.db = db;
+  try {
+    const user = await claude.use("user");
+    if (user) state.canWrite = user.can("data.write") !== false;
+  } catch (e) { /* keep default */ }
+  db.doc("settings/event").onSnapshot((snap) => {
+    const c = snap.exists ? snap.data().capacity : null;
+    state.capacity = c > 0 ? c : 150;
+    if (state.loaded && state.rows.length && !state.editCap) renderKpis();
+  }, () => {});
+  db.collection("participants").onSnapshot((snap) => {
+    state.rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    state.loaded = true; renderEmpty(); renderAll();
+  }, (e) => { $("#sub").textContent = e && e.code === "revoked" ? "Доступ к данным закрыт." : "Не удалось загрузить данные."; });
+})();
+</script>

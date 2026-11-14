@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Регистрации на мероприятие</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --text: #1c2230; --muted: #667085; --line: #e3e6ec;
+    --ok: #12805c; --bad: #b42318; --bad-bg: #fdebe9; --accent: #2f5bea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151c; --card: #1b2029; --text: #eef1f6; --muted: #98a2b3; --line: #2b3240;
+      --ok: #4cc79a; --bad: #ff8a80; --bad-bg: #3a1b19; --accent: #7e9bff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; }
+  .src { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  button { font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+           border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .kpi .label { color: var(--muted); font-size: 14px; }
+  .kpi .num { font-size: 56px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi .sub { color: var(--muted); font-size: 13px; min-height: 1.4em; }
+  .kpi.ok .num { color: var(--ok); }
+  .kpi.bad .num { color: var(--bad); }
+  .tables { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  tfoot td { font-weight: 700; border-bottom: 0; }
+  td.ok { color: var(--ok); } td.bad { color: var(--bad); }
+  .pct { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+  .track { width: 48px; height: 8px; background: var(--bad-bg); border-radius: 4px; overflow: hidden; flex: none; }
+  .fill { height: 100%; background: var(--ok); }
+  .msg { color: var(--bad); font-size: 14px; margin: 0 0 12px; display: none; }
+  @media (max-width: 760px) {
+    .tables { grid-template-columns: 1fr; }
+    .kpi .num { font-size: 40px; }
+    .kpis { gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .kpi { padding: 14px 12px; }
+    .kpi .label { font-size: 12px; }
+  }
+  @media (max-width: 480px) {
+    section { padding: 12px 10px; }
+    th, td { padding: 8px 3px; font-size: 13px; }
+    th { font-size: 11px; }
+    .track { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Регистрации на мероприятие</h1>
+      <div class="src" id="src"></div>
+    </div>
+    <div>
+      <button id="load">Загрузить CSV…</button>
+      <input type="file" id="file" accept=".csv,text/csv" hidden>
+    </div>
+  </header>
+  <p class="msg" id="msg"></p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Всего</div><div class="num" id="k-total">0</div><div class="sub">регистраций</div></div>
+    <div class="kpi ok"><div class="label">Оплатили</div><div class="num" id="k-paid">0</div><div class="sub" id="k-paid-pct"></div></div>
+    <div class="kpi bad"><div class="label">Не оплатили</div><div class="num" id="k-unpaid">0</div><div class="sub" id="k-unpaid-pct"></div></div>
+  </div>
+
+  <div class="tables">
+    <section>
+      <h2>По каналам (откуда пришли)</h2>
+      <table id="t-source"></table>
+    </section>
+    <section>
+      <h2>По городам</h2>
+      <table id="t-city"></table>
+    </section>
+  </div>
+</div>
+
+<script type="text/plain" id="data">
+city,registered,source,ticket,paid
+Астана,2026-10-30,Telegram,VIP,да
+Актобе,2026-10-22,Email-рассылка,Стандарт,да
+Астана,2026-11-07,Сайт,Стандарт,да
+Астана,2026-10-21,Telegram,Стандарт,да
+Астана,2026-10-27,Email-рассылка,Стандарт,да
+Астана,2026-11-07,Instagram,VIP,да
+Алматы,2026-11-07,Telegram,Стандарт,да
+Алматы,2026-10-21,Сайт,Стандарт,да
+Астана,2026-11-02,Email-рассылка,Стандарт,да
+Актобе,2026-11-06,Email-рассылка,Стандарт,да
+Алматы,2026-11-07,Email-рассылка,Стандарт,да
+Алматы,2026-10-23,Партнёры,Стандарт,да
+Астана,2026-11-08,Telegram,VIP,нет
+Алматы,2026-11-13,Telegram,VIP,нет
+Астана,2026-10-31,Instagram,Онлайн,да
+Караганда,2026-11-11,Instagram,Стандарт,да
+Алматы,2026-11-05,Сайт,Стандарт,нет
+Шымкент,2026-10-29,Instagram,Стандарт,нет
+Караганда,2026-10-25,Telegram,Стандарт,нет
+Астана,2026-11-02,Email-рассылка,Стандарт,да
+Шымкент,2026-10-30,Telegram,VIP,нет
+Караганда,2026-11-07,Telegram,Стандарт,да
+Алматы,2026-10-28,Партнёры,VIP,да
+Караганда,2026-10-21,Партнёры,Стандарт,нет
+Шымкент,2026-10-29,Telegram,Онлайн,да
+Алматы,2026-10-20,Telegram,Стандарт,да
+Астана,2026-11-04,Instagram,Онлайн,да
+Караганда,2026-10-24,Instagram,Стандарт,нет
+Астана,2026-11-04,Instagram,Стандарт,нет
+Астана,2026-11-06,Сайт,Стандарт,нет
+</script>
+
+<script>
+(function () {
+  var PAID = ["да", "yes", "true", "1", "оплачено", "paid"];
+
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, "");
+    var rows = [], row = [], cur = "", q = false, i, c;
+    function pushRow() {
+      row.push(cur); cur = "";
+      if (row.some(function (v) { return v.trim() !== ""; })) rows.push(row);
+      row = [];
+    }
+    for (i = 0; i < text.length; i++) {
+      c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += c;
+      } else if (c === '"') q = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; pushRow(); }
+      else cur += c;
+    }
+    pushRow();
+    return rows;
+  }
+
+  function toRecords(text) {
+    var rows = parseCSV(text);
+    if (rows.length < 2) throw new Error("в файле нет строк с данными.");
+    var head = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+    var iCity = head.indexOf("city"), iSrc = head.indexOf("source"), iPaid = head.indexOf("paid");
+    if (iCity < 0 || iSrc < 0 || iPaid < 0)
+      throw new Error("нужны колонки city, source и paid. Найдены: " + head.join(", "));
+    return rows.slice(1).map(function (r) {
+      return {
+        city: (r[iCity] || "").trim() || "Не указан",
+        source: (r[iSrc] || "").trim() || "Не указан",
+        paid: PAID.indexOf((r[iPaid] || "").trim().toLowerCase()) >= 0
+      };
+    });
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function pct(a, b) { return b ? Math.round(a * 100 / b) : 0; }
+
+  function group(recs, key) {
+    var m = {};
+    recs.forEach(function (r) {
+      var g = m[r[key]] || (m[r[key]] = { name: r[key], total: 0, paid: 0 });
+      g.total++; if (r.paid) g.paid++;
+    });
+    return Object.keys(m).map(function (k) { return m[k]; })
+      .sort(function (a, b) { return b.total - a.total || a.name.localeCompare(b.name, "ru"); });
+  }
+
+  function line(name, t, p, bar) {
+    var pc = pct(p, t);
+    return "<tr><td>" + esc(name) + "</td><td>" + t + '</td><td class="ok">' + p + '</td><td class="bad">' + (t - p) +
+      '</td><td><div class="pct"><span>' + pc + "%</span>" +
+      (bar ? '<div class="track"><div class="fill" style="width:' + pc + '%"></div></div>' : "") +
+      "</div></td></tr>";
+  }
+
+  function renderTable(id, firstCol, groups, total, paid) {
+    var h = "<thead><tr><th>" + firstCol + "</th><th>Всего</th><th>Оплатили</th><th>Не оплатили</th><th>% оплаты</th></tr></thead><tbody>";
+    groups.forEach(function (g) { h += line(g.name, g.total, g.paid, true); });
+    h += "</tbody><tfoot>" + line("Итого", total, paid, false) + "</tfoot>";
+    document.getElementById(id).innerHTML = h;
+  }
+
+  function render(recs, label) {
+    var total = recs.length, paid = recs.filter(function (r) { return r.paid; }).length;
+    document.getElementById("k-total").textContent = total;
+    document.getElementById("k-paid").textContent = paid;
+    document.getElementById("k-unpaid").textContent = total - paid;
+    document.getElementById("k-paid-pct").textContent = pct(paid, total) + "% от всех";
+    document.getElementById("k-unpaid-pct").textContent = pct(total - paid, total) + "% от всех";
+    document.getElementById("src").textContent = label + " · " + total + " строк";
+    renderTable("t-source", "Канал", group(recs, "source"), total, paid);
+    renderTable("t-city", "Город", group(recs, "city"), total, paid);
+  }
+
+  function showError(t) {
+    var m = document.getElementById("msg");
+    m.textContent = t; m.style.display = t ? "block" : "none";
+  }
+
+  render(toRecords(document.getElementById("data").textContent), "Данные: registrations.csv");
+
+  var file = document.getElementById("file");
+  document.getElementById("load").onclick = function () { file.click(); };
+  file.onchange = function () {
+    var f = file.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      try { render(toRecords(rd.result), "Данные: " + f.name); showError(""); }
+      catch (e) { showError("Не удалось прочитать файл: " + e.message); }
+    };
+    rd.readAsText(f, "utf-8");
+    file.value = "";
+  };
+})();
+</script>
+</body>
+</html>
